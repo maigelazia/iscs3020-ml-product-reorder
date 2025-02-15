@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Form</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h2 class="mt-5">Prediction Form</h2>
+    <form id="predictionForm">
+        <!-- User ID Dropdown -->
+        <div class="form-group">
+            <label for="user_id">User ID:</label>
+            <select class="form-control" id="user_id" required>
+                <!-- Options populated dynamically -->
+            </select>
+        </div>
+        
+        <!-- Order Hour of Day -->
+        <div class="form-group">
+            <label for="order_hour_of_day">Order Hour of Day:</label>
+            <input type="number" class="form-control" id="order_hour_of_day" placeholder="Enter order hour" min="0" max="23" required>
+        </div>
+        
+        <!-- Order Day of the Week -->
+        <div class="form-group">
+            <label for="order_dow">Order Day of the Week (0 = Sunday):</label>
+            <input type="number" class="form-control" id="order_dow" placeholder="Enter day of week" min="0" max="6" required>
+        </div>
+        
+        <!-- Product Dropdown with Search -->
+        <div class="form-group">
+            <label for="product">Product:</label>
+            <select class="form-control" id="product" required>
+                <!-- Options populated dynamically -->
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <div id="result" class="mt-5"></div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $(document).ready(function() {
+            // Load users dynamically from API
+            fetch('http://127.0.0.1:5000/api/users')
+                .then(response => response.json())
+                .then(data => {
+                    const users = data.users;
+                    users.forEach(user => {
+                        $('#user_id').append(new Option(user, user));
+                    });
+                })
+                .catch(error => console.error('Error fetching users:', error));
+        
+            // Load products dynamically from API
+            fetch('http://127.0.0.1:5000/api/products')
+                .then(response => response.json())
+                .then(data => {
+                    const products = data.products;
+                    products.forEach(product => {
+                        $('#product').append(new Option(product.name, product.id));
+                    });
+                })
+                .catch(error => console.error('Error fetching products:', error));
+        
+            // Handle form submission (same as before)
+            $('#predictionForm').on('submit', function(e) {
+                e.preventDefault();
+        
+                // Prepare data for API request
+                const data = {
+                    instances: [
+                        {
+                            user_id: $('#user_id').val(),
+                            order_hour_of_day: $('#order_hour_of_day').val(),
+                            order_dow: $('#order_dow').val(),
+                            product_id: $('#product').val(),
+                        }
+                    ]
+                };
+                
+                const ENDPOINT_ID = "6515073687014604800"; // replace with your endpoint ID
+                const PROJECT_ID = "1003347448964"; // replace with your project ID
+                const API_URL = `https://us-central1-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/us-central1/endpoints/${ENDPOINT_ID}:predict`;
+            
+                // Send API request (replace 'YOUR_API_ENDPOINT' with the actual endpoint URL)
+                fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer YOUR_ACCESS_TOKEN'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    $('#result').html(`<p>Prediction: ${JSON.stringify(result)}</p>`);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    $('#result').html('<p>Error in prediction. Check console for details.</p>');
+                });
+            });
+        });
+        
+        // Populate User ID dropdown
+        users.forEach(user => {
+            $('#user_id').append(new Option(user, user));
+        });
+
+        // Populate Product dropdown with filter function
+        products.forEach(product => {
+            $('#product').append(new Option(product.name, product.id));
+        });
+
+        // Handle form submission
+        $('#predictionForm').on('submit', function(e) {
+            e.preventDefault();
+
+            // Prepare data for API request
+            const data = {
+                instances: [
+                    {
+                        user_id: $('#user_id').val(),
+                        order_hour_of_day: $('#order_hour_of_day').val(),
+                        order_dow: $('#order_dow').val(),
+                        product_id: $('#product').val(),
+                    }
+                ]
+            };
+
+            // Send API request (replace 'YOUR_API_ENDPOINT' with the actual endpoint URL)
+            fetch('YOUR_API_ENDPOINT', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                $('#result').html(`<p>Prediction: ${JSON.stringify(result)}</p>`);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                $('#result').html('<p>Error in prediction. Check console for details.</p>');
+            });
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Form</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h2 class="mt-5">Prediction Form</h2>
+    <form id="predictionForm">
+        <!-- User ID Autocomplete -->
+        <div class="form-group">
+            <label for="user_id">User ID:</label>
+            <input type="text" class="form-control" id="user_id" placeholder="Type to search User ID" required>
+            <input type="hidden" id="user_id_hidden" />
+        </div>
+        
+        <!-- Datetime Selector -->
+        <div class="form-group">
+            <label for="order_datetime">Order Date and Time:</label>
+            <input type="datetime-local" class="form-control" id="order_datetime" required>
+        </div>
+        
+        <!-- Product Autocomplete with Search -->
+        <div class="form-group">
+            <label for="product">Product:</label>
+            <input type="text" class="form-control" id="product" placeholder="Type to search Product" required>
+            <input type="hidden" id="product_id_hidden" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <div id="result" class="mt-5"></div>
+</div>
+<script>
+    $(document).ready(function() {
+        // Autocomplete for User ID
+        $("#user_id").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "/api/user_search",
+                    data: { term: request.term },
+                    success: function(data) {
+                        response(data.users.map(user => ({
+                            label: user.toString(),
+                            value: user
+                        })));
+                    }
+                });
+            },
+            minLength: 2,
+            select: function(event, ui) {
+                $("#user_id").val(ui.item.label); // Display the user ID
+                $("#user_id_hidden").val(ui.item.value); // Store the user ID in the hidden field
+                return false;
+            }
+        });
+
+        // Autocomplete for Product
+        $("#product").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "/api/product_search",
+                    data: { term: request.term },
+                    success: function(data) {
+                        response(data.products.map(item => ({
+                            label: item.product_name, // Display product name
+                            value: item.product_id // Store product ID
+                        })));
+                    }
+                });
+            },
+            minLength: 2,
+            select: function(event, ui) {
+                $("#product").val(ui.item.label); // Display the product name
+                $("#product_id_hidden").val(ui.item.value); // Store the product ID in the hidden field
+                return false;
+            }
+        });
+
+        // Handle form submission
+        $('#predictionForm').on('submit', function(e) {
+            e.preventDefault();
+
+            // Extract day of the week and hour from datetime selector
+            const datetime = new Date($('#order_datetime').val());
+            const order_dow = datetime.getDay();
+            const order_hour_of_day = datetime.getHours();
+
+            // Ensure values are captured properly
+            const userId = $('#user_id_hidden').val();
+            const productId = $('#product_id_hidden').val();
+
+            if (!userId || !productId) {
+                alert('Please select a valid User ID and Product from the suggestions.');
+                return;
+            }
+
+            // Prepare data for API request
+            const data = {
+                instances: [
+                    {
+                        'user_id': userId.toString(), // Send user ID as string
+                        'order_hour_of_day': order_hour_of_day.toString(),
+                        'order_dow': order_dow.toString(),
+                        'product_id': productId.toString() // Send product ID as string
+                    }
+                ]
+            };
+
+            // Send API request to the Flask backend for prediction
+            fetch('/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                // Process and display prediction results
+                const prediction = result.predictions[0];
+                const reorderedProbability = prediction.scores[0];
+                const notReorderedProbability = prediction.scores[1];
+                const reorderedText = reorderedProbability >= 0.5 ? 'Likely to reorder' : 'Unlikely to reorder';
+
+                $('#result').html(`
+                    <p>Prediction: ${reorderedText}</p>
+                    <p>Probability of Reorder: ${(reorderedProbability * 100).toFixed(2)}%</p>
+                    <p>Probability of Not Reordering: ${(notReorderedProbability * 100).toFixed(2)}%</p>
+                `);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                $('#result').html('<p>Error in prediction. Check console for details.</p>');
+            });
+        });
+    });
+</script>
+
+</body>
+</html>
