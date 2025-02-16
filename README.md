@@ -1,6 +1,6 @@
 # Predictive Model for E-Commerce Product Reorders
 
-A Flask-based API that integrates with Google Cloud Vertex AI to predict the likeliness of a customer to reorder products from an online grocery store. Developed as part of the Guided Studies in Machine Learning Pipelines course
+This project was developed as part of the Guided Studies in Machine Learning Pipelines course. It is a Flask-based API that integrates with Google Cloud Vertex AI to predict the likeliness of a customer to reorder products from an online grocery store.
 
 ## Setup & Installation
 1. Clone the repository.
