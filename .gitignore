@@ -1,0 +1,5 @@
+.env
+iscs-3020-ml-endpoint-4a2ef8396be9.json
+__pycache__/
+.DS_Store
+venv/

@@ -6,6 +6,8 @@ import google.auth
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request
 import re
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 # CORS(app)/
@@ -27,11 +29,15 @@ avg_time_between_purchases = data.groupby('product_id')['days_since_prior_order'
 unique_users = data['user_id'].unique().tolist()
 unique_products = data[['product_id', 'product_name']].drop_duplicates().to_dict(orient='records')
 
-# Define constants for service account and API endpoint
-SERVICE_ACCOUNT_FILE = 'iscs-3020-ml-endpoint-4a2ef8396be9.json'
-ENDPOINT_ID = "6515073687014604800"
-PROJECT_ID = "1003347448964"
+# Load environment variables from .env file
+load_dotenv()
+
+# Retrieve values from environment variables
+SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+ENDPOINT_ID = os.getenv("ENDPOINT_ID")
+PROJECT_ID = os.getenv("PROJECT_ID")
 API_URL = f"https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/endpoints/{ENDPOINT_ID}:predict"
+
 
 @app.route('/api/user_search', methods=['GET'])
 def user_search():
